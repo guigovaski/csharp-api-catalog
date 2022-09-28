@@ -1,4 +1,8 @@
 using ApiCatalog.Data;
+using ApiCatalog.Dtos.Mappings;
+using ApiCatalog.Repository;
+using ApiCatalog.Repository.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -17,6 +21,16 @@ string mysqlConnection = builder.Configuration.GetConnectionString("ApiCatalogCo
 
 builder.Services.AddDbContext<ApiCatalogContext>(options =>
     options.UseMySql(mysqlConnection, ServerVersion.AutoDetect(mysqlConnection)));
+
+builder.Services.AddScoped<IUnityOfWork, UnityOfWork>();
+
+var mappingConfig = new MapperConfiguration(mc =>
+    mc.AddProfile(new MappingProfile())
+);
+
+IMapper mapper = mappingConfig.CreateMapper();
+
+builder.Services.AddSingleton(mapper);
 
 var app = builder.Build();
 

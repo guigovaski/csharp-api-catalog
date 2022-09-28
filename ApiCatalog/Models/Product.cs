@@ -22,7 +22,5 @@ public class Product
     public int Inventory { get; set; }
     public DateTime Date { get; set; }
     public int CategoryId { get; set; }
-
-    [JsonIgnore]
     public Category? Category { get; set; }
 }

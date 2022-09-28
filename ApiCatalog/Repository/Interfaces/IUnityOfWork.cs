@@ -1,0 +1,8 @@
+﻿namespace ApiCatalog.Repository.Interfaces;
+
+public interface IUnityOfWork
+{
+    IProductRepository ProductRepository { get; }
+    ICategoryRepository CategoryRepository { get; }
+    void Commit();
+}

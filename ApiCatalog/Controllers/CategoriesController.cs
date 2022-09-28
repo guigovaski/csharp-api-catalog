@@ -1,9 +1,8 @@
-﻿using ApiCatalog.Data;
+﻿using ApiCatalog.Dtos;
 using ApiCatalog.Models;
-using Microsoft.AspNetCore.Http;
+using ApiCatalog.Repository.Interfaces;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 
 namespace ApiCatalog.Controllers;
 
@@ -11,26 +10,30 @@ namespace ApiCatalog.Controllers;
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-    private readonly ApiCatalogContext _context;
+    private readonly IUnityOfWork _uof;
+    private readonly IMapper _mapper;
 
-    public CategoriesController(ApiCatalogContext context)
+    public CategoriesController(IUnityOfWork uof, IMapper mapper)
     {
-        _context = context;
+        _uof = uof;
+        _mapper = mapper;
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Category>> Get()
+    public ActionResult<IEnumerable<CategoryDto>> Get()
     {
         try
         {
-            var categories = _context.Categories?.AsNoTracking().ToList();
+            var categories = _uof.CategoryRepository.Get().ToList();
 
             if (categories is null)
             {
                 return NotFound();
             }
 
-            return categories;
+            var categoriesDto = _mapper.Map<List<CategoryDto>>(categories);
+
+            return categoriesDto;
         }
         catch (Exception)
         {
@@ -39,18 +42,20 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<Category> Get(int id)
+    public ActionResult<CategoryDto> Get(int id)
     {
         try
         {
-            var category = _context.Categories?.AsNoTracking().FirstOrDefault(c => c.CategoryId == id);
+            var category = _uof.CategoryRepository.GetById(c => c.CategoryId == id);
 
             if (category is null)
             {
                 return NotFound("Category not found");
             }
 
-            return category;
+            var categoryDto = _mapper.Map<CategoryDto>(category);
+
+            return categoryDto;
         }
         catch (Exception)
         {
@@ -59,18 +64,20 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("products")]
-    public ActionResult<IEnumerable<Category>> GetCategoriesProducts()
+    public ActionResult<IEnumerable<CategoryDto>> GetCategoriesProducts()
     {
         try
         {
-            var categoriesProducts = _context.Categories?.AsNoTracking().Include(c => c.Products).ToList();
+            var categoriesProducts = _uof.CategoryRepository.GetCategoriesProducts().ToList();
 
             if (categoriesProducts is null)
             {
                 return NotFound();
             }
 
-            return categoriesProducts;
+            var categoriesDto = _mapper.Map<List<CategoryDto>>(categoriesProducts);
+
+            return categoriesDto;
         }
         catch (Exception)
         {
@@ -80,12 +87,13 @@ public class CategoriesController : ControllerBase
 
 
     [HttpPost]
-    public ActionResult Post(Category category)
+    public ActionResult Post(CategoryDto categoryDto)
     {
         try
         {
-            _context.Categories?.Add(category);
-            _context.SaveChanges();
+            var category = _mapper.Map<Category>(categoryDto);
+            _uof.CategoryRepository.Add(category);
+            _uof.Commit();
 
             return RedirectToAction(nameof(Get), new { id = category.CategoryId });
         }
@@ -96,17 +104,19 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult Patch(int id, Category category)
+    public ActionResult Put(int id, CategoryDto categoryDto)
     {
         try
         {
-            if (id != category.CategoryId)
+            if (id != categoryDto.CategoryId)
             {
                 return BadRequest();
             }
 
-            _context.Categories?.Update(category);
-            _context.SaveChanges();
+            var category = _mapper.Map<Category>(categoryDto);
+
+            _uof.CategoryRepository.Update(category);
+            _uof.Commit();
 
             return NoContent();
         }
@@ -122,15 +132,15 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            var category = _context.Categories?.FirstOrDefault(c => c.CategoryId == id);
+            var category = _uof.CategoryRepository.GetById(c => c.CategoryId == id);
 
             if (category is null)
             {
                 return NotFound();
             }
 
-            _context.Categories?.Remove(category);
-            _context.SaveChanges();
+            _uof.CategoryRepository.Delete(category);
+            _uof.Commit();
 
             return Ok();
         }

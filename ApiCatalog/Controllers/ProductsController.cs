@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using ApiCatalog.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 using ApiCatalog.Models;
-using Microsoft.EntityFrameworkCore;
+using ApiCatalog.Repository.Interfaces;
+using AutoMapper;
+using ApiCatalog.Dtos;
 
 namespace ApiCatalog.Controllers;
 
@@ -10,26 +10,30 @@ namespace ApiCatalog.Controllers;
 [ApiController]
 public class ProductsController : ControllerBase
 {
-    private readonly ApiCatalogContext _context;
+    private readonly IUnityOfWork _uof;
+    private readonly IMapper _mapper;
 
-    public ProductsController(ApiCatalogContext context)
+    public ProductsController(IUnityOfWork uof, IMapper mapper)
     {
-        _context = context;
+        _uof = uof;
+        _mapper = mapper;
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Product>> Get()
+    public ActionResult<IEnumerable<ProductDto>> Get()
     {
         try
         {
-            var products = _context.Products?.AsNoTracking().ToList();
+            var products = _uof.ProductRepository.Get().ToList();
 
             if (products is null)
             {
                 return NotFound("No products were found");
             }
 
-            return products;
+            var productsDto = _mapper.Map<List<ProductDto>>(products);
+
+            return productsDto;
         }
         catch (Exception)
         {
@@ -38,19 +42,21 @@ public class ProductsController : ControllerBase
         
     }
 
-    [HttpGet("{id:int}", Name = "GetProduct")]
-    public ActionResult<Product> Get(int id)
+    [HttpGet("{id:int}")]
+    public ActionResult<ProductDto> Get(int id)
     {
         try
         {
-            var product = _context.Products?.AsNoTracking().FirstOrDefault(p => p.ProductId == id);
+            var product = _uof.ProductRepository.GetById(p => p.ProductId == id);
 
             if (product is null)
             {
                 return NotFound("Product not found");
             }
 
-            return product;
+            var productDto = _mapper.Map<ProductDto>(product);
+
+            return productDto;
         }
         catch (Exception)
         {
@@ -59,17 +65,19 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult Post(Product product)
+    public ActionResult Post(ProductDto productDto)
     {
         try
         {
-            if (product is null)
+            if (productDto is null)
             {
                 return BadRequest();
             }
 
-            _context.Products?.Add(product);
-            _context.SaveChanges();
+            var product = _mapper.Map<Product>(productDto);
+
+            _uof.ProductRepository.Add(product);
+            _uof.Commit();
 
             return RedirectToAction(nameof(Get), new { id = product.ProductId });
         }
@@ -80,17 +88,19 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult Patch(int id, Product product)
+    public ActionResult Patch(int id, ProductDto productDto)
     {
         try
         {
-            if (id != product.ProductId)
+            if (id != productDto.ProductId)
             {
                 return NotFound("Product not found");
             }
 
-            _context.Products?.Update(product);
-            _context.SaveChanges();
+            var product = _mapper.Map<Product>(productDto);
+
+            _uof.ProductRepository.Update(product);
+            _uof.Commit();
 
             return NoContent();
         }
@@ -105,15 +115,15 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            var product = _context.Products?.FirstOrDefault(p => p.ProductId == id);
+            var product = _uof.ProductRepository.GetById(p => p.ProductId == id);
 
             if (product is null)
             {
                 return NotFound();
             }
 
-            _context.Products?.Remove(product);
-            _context.SaveChanges();
+            _uof.ProductRepository.Delete(product);
+            _uof.Commit();
 
             return Ok();
         }
