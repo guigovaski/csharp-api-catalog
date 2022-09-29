@@ -3,6 +3,9 @@ using ApiCatalog.Models;
 using ApiCatalog.Repository.Interfaces;
 using AutoMapper;
 using ApiCatalog.Dtos;
+using ApiCatalog.Pagination;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace ApiCatalog.Controllers;
 
@@ -20,16 +23,28 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<ProductDto>> Get()
+    public async Task<ActionResult<IEnumerable<ProductDto>>> Get([FromQuery] ProductsPageParameters query)
     {
         try
         {
-            var products = _uof.ProductRepository.Get().ToList();
+            var products = await _uof.ProductRepository.GetProductsPaginated(query);
 
             if (products is null)
             {
                 return NotFound("No products were found");
             }
+
+            var metadata = new
+            {
+                products.TotalCount,
+                products.TotalPages,
+                products.CurrentPage,
+                products.PageSize,
+                products.HasNext,
+                products.HasPrevious,
+            };
+
+            Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(metadata));
 
             var productsDto = _mapper.Map<List<ProductDto>>(products);
 
@@ -43,11 +58,11 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<ProductDto> Get(int id)
+    public async Task<ActionResult<ProductDto>> Get(int id)
     {
         try
         {
-            var product = _uof.ProductRepository.GetById(p => p.ProductId == id);
+            var product = await _uof.ProductRepository.GetById(p => p.ProductId == id);
 
             if (product is null)
             {
@@ -65,7 +80,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult Post(ProductDto productDto)
+    public async Task<ActionResult> Post(ProductDto productDto)
     {
         try
         {
@@ -77,7 +92,7 @@ public class ProductsController : ControllerBase
             var product = _mapper.Map<Product>(productDto);
 
             _uof.ProductRepository.Add(product);
-            _uof.Commit();
+            await _uof.Commit();
 
             return RedirectToAction(nameof(Get), new { id = product.ProductId });
         }
@@ -88,7 +103,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult Patch(int id, ProductDto productDto)
+    public async Task<ActionResult> Patch(int id, ProductDto productDto)
     {
         try
         {
@@ -100,7 +115,7 @@ public class ProductsController : ControllerBase
             var product = _mapper.Map<Product>(productDto);
 
             _uof.ProductRepository.Update(product);
-            _uof.Commit();
+            await _uof.Commit();
 
             return NoContent();
         }
@@ -111,11 +126,11 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public ActionResult Delete(int id)
+    public async Task<ActionResult> Delete(int id)
     {
         try
         {
-            var product = _uof.ProductRepository.GetById(p => p.ProductId == id);
+            var product = await _uof.ProductRepository.GetById(p => p.ProductId == id);
 
             if (product is null)
             {
@@ -123,7 +138,7 @@ public class ProductsController : ControllerBase
             }
 
             _uof.ProductRepository.Delete(product);
-            _uof.Commit();
+            await _uof.Commit();
 
             return Ok();
         }

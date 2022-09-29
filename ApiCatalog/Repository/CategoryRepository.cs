@@ -1,5 +1,6 @@
 ﻿using ApiCatalog.Data;
 using ApiCatalog.Models;
+using ApiCatalog.Pagination;
 using ApiCatalog.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +12,13 @@ public class CategoryRepository : Repository<Category>, ICategoryRepository
     {
     }
 
-    public IEnumerable<Category> GetCategoriesProducts()
+    public async Task<IEnumerable<Category>> GetCategoriesProducts()
     {
-        return Get().Include(c => c.Products).AsNoTracking();
+        return await Get().Include(c => c.Products).AsNoTracking().ToListAsync();
+    }
+
+    public async Task<PagedList<Category>> GetCategoriesPaginated(CategoriesPageParameters obj)
+    {
+        return await PagedList<Category>.ToPagedList(Get(), obj.CurrentPage, obj.PageSize);
     }
 }

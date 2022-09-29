@@ -1,8 +1,10 @@
 ﻿using ApiCatalog.Dtos;
 using ApiCatalog.Models;
+using ApiCatalog.Pagination;
 using ApiCatalog.Repository.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace ApiCatalog.Controllers;
 
@@ -20,16 +22,28 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<CategoryDto>> Get()
+    public async Task<ActionResult<IEnumerable<CategoryDto>>> Get([FromQuery] CategoriesPageParameters query)
     {
         try
         {
-            var categories = _uof.CategoryRepository.Get().ToList();
+            var categories = await _uof.CategoryRepository.GetCategoriesPaginated(query);
 
             if (categories is null)
             {
                 return NotFound();
             }
+
+            var metadata = new
+            {
+                categories.TotalCount,
+                categories.TotalPages,
+                categories.CurrentPage,
+                categories.PageSize,
+                categories.HasNext,
+                categories.HasPrevious,
+            };
+
+            Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(metadata));
 
             var categoriesDto = _mapper.Map<List<CategoryDto>>(categories);
 
@@ -42,11 +56,11 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<CategoryDto> Get(int id)
+    public async Task<ActionResult<CategoryDto>> Get(int id)
     {
         try
         {
-            var category = _uof.CategoryRepository.GetById(c => c.CategoryId == id);
+            var category = await _uof.CategoryRepository.GetById(c => c.CategoryId == id);
 
             if (category is null)
             {
@@ -64,11 +78,11 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("products")]
-    public ActionResult<IEnumerable<CategoryDto>> GetCategoriesProducts()
+    public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategoriesProducts()
     {
         try
         {
-            var categoriesProducts = _uof.CategoryRepository.GetCategoriesProducts().ToList();
+            var categoriesProducts = await _uof.CategoryRepository.GetCategoriesProducts();
 
             if (categoriesProducts is null)
             {
@@ -87,13 +101,13 @@ public class CategoriesController : ControllerBase
 
 
     [HttpPost]
-    public ActionResult Post(CategoryDto categoryDto)
+    public async Task<ActionResult> Post(CategoryDto categoryDto)
     {
         try
         {
             var category = _mapper.Map<Category>(categoryDto);
             _uof.CategoryRepository.Add(category);
-            _uof.Commit();
+            await _uof.Commit();
 
             return RedirectToAction(nameof(Get), new { id = category.CategoryId });
         }
@@ -104,7 +118,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult Put(int id, CategoryDto categoryDto)
+    public async Task<ActionResult> Put(int id, CategoryDto categoryDto)
     {
         try
         {
@@ -116,7 +130,7 @@ public class CategoriesController : ControllerBase
             var category = _mapper.Map<Category>(categoryDto);
 
             _uof.CategoryRepository.Update(category);
-            _uof.Commit();
+            await _uof.Commit();
 
             return NoContent();
         }
@@ -128,11 +142,11 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public ActionResult Delete(int id)
+    public async Task<ActionResult> Delete(int id)
     {
         try
         {
-            var category = _uof.CategoryRepository.GetById(c => c.CategoryId == id);
+            var category = await _uof.CategoryRepository.GetById(c => c.CategoryId == id);
 
             if (category is null)
             {
@@ -140,7 +154,7 @@ public class CategoriesController : ControllerBase
             }
 
             _uof.CategoryRepository.Delete(category);
-            _uof.Commit();
+            await _uof.Commit();
 
             return Ok();
         }
