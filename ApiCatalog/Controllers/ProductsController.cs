@@ -6,11 +6,14 @@ using ApiCatalog.Dtos;
 using ApiCatalog.Pagination;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace ApiCatalog.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ProductsController : ControllerBase
 {
     private readonly IUnityOfWork _uof;

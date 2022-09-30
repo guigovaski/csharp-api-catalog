@@ -1,9 +1,10 @@
 ﻿using ApiCatalog.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace ApiCatalog.Data;
 
-public class ApiCatalogContext : DbContext
+public class ApiCatalogContext : IdentityDbContext
 {
     public ApiCatalogContext(DbContextOptions<ApiCatalogContext> options) : base(options)
     {
@@ -15,5 +16,6 @@ public class ApiCatalogContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Seed();
+        base.OnModelCreating(modelBuilder);
     }
 }

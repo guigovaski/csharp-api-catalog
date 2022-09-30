@@ -3,6 +3,8 @@ using ApiCatalog.Models;
 using ApiCatalog.Pagination;
 using ApiCatalog.Repository.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -10,6 +12,7 @@ namespace ApiCatalog.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class CategoriesController : ControllerBase
 {
     private readonly IUnityOfWork _uof;
