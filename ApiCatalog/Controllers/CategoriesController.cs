@@ -6,10 +6,14 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using System.Text.Json;
 
 namespace ApiCatalog.Controllers;
 
+[EnableQuery]
+[ApiConventionType(typeof(DefaultApiConventions))]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

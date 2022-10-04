@@ -8,9 +8,13 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace ApiCatalog.Controllers;
 
+[EnableQuery]
+[ApiConventionType(typeof(DefaultApiConventions))]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
